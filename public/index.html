@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>商场商铺数据监控</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 顶部栏 -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="logo">🏬</div>
+        <div>
+          <h1>商场商铺数据监控</h1>
+          <p class="sub">接入 CHKC 商场数据接口 · 定时比对商铺变动 · 邮件通知</p>
+        </div>
+      </div>
+      <div class="status-pills">
+        <span id="apiStatus" class="pill pill-gray"><i class="dot"></i>接口：未检测</span>
+        <span id="schedPill" class="pill pill-gray"><i class="dot"></i>定时：未开启</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- 操作栏（位于两个配置模块上方，按钮靠右） -->
+    <div class="data-toolbar">
+      <button class="btn btn-ghost" id="btnHistory">📜 运行历史</button>
+      <button class="btn btn-ghost" id="btnVerify">🔌 检测接口连通</button>
+      <button class="btn btn-primary" id="btnPreview">↻ 立即抓取并预览变动</button>
+    </div>
+
+    <!-- 顶部两栏：发送周期 + 通信配置 -->
+    <div class="config-row">
+      <!-- 发送周期 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="num">1</span>
+          <h2>发送周期</h2>
+          <span class="spacer"></span>
+          <label class="toggle">
+            <input type="checkbox" id="enabled" />
+            <span class="track"><span class="thumb"></span></span>
+            <span class="toggle-label">开启定时任务</span>
+          </label>
+        </div>
+
+        <div class="segmented" role="tablist">
+          <label><input type="radio" name="mode" value="interval" /><span>按间隔</span></label>
+          <label><input type="radio" name="mode" value="daily" /><span>每天定时</span></label>
+        </div>
+
+        <div id="intervalBox" class="field">
+          <label class="lbl">检查频率</label>
+          <div class="inline">每隔
+            <input type="number" id="intervalMinutes" min="1" step="1" class="w-90" /> 分钟
+          </div>
+          <div class="quick-set" data-target="intervalMinutes">
+            <button type="button" data-v="30">30 分钟</button>
+            <button type="button" data-v="60">1 小时</button>
+            <button type="button" data-v="360">6 小时</button>
+            <button type="button" data-v="1440">1 天</button>
+          </div>
+        </div>
+
+        <div id="dailyBox" class="field" hidden>
+          <label class="lbl">每天检查时间</label>
+          <input type="time" id="dailyTime" class="w-160" />
+        </div>
+
+        <label class="check-row">
+          <input type="checkbox" id="notifyWhenNoChange" />
+          <span>即使没有变动也发送邮件 <em>（默认只在有变动时发）</em></span>
+        </label>
+
+        <div class="schedule-info" id="scheduleInfo"></div>
+
+        <div class="card-foot">
+          <button class="btn btn-primary" id="btnSaveSchedule">保存发送周期</button>
+        </div>
+      </section>
+
+      <!-- 通信配置 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="num">2</span>
+          <h2>通信配置</h2>
+        </div>
+        <div class="field">
+          <label class="lbl" for="recipients">收件邮箱 <em>（多个邮箱用逗号 / 换行分隔）</em></label>
+          <textarea id="recipients" rows="3" placeholder="a@example.com, b@example.com"></textarea>
+        </div>
+
+        <div class="smtp-bar">
+          <div class="smtp-status">
+            <span class="lbl" style="margin:0">发件服务器</span>
+            <span id="smtpStatus" class="smtp-state">未配置</span>
+          </div>
+          <button class="btn btn-soft" id="btnOpenSmtp">⚙️ 配置发件服务器</button>
+        </div>
+
+        <div class="card-foot">
+          <button class="btn btn-primary" id="btnSaveComms">保存通信配置</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 变动预览 -->
+    <section class="card" id="diffCard" hidden>
+      <div class="card-head"><h2>变动预览</h2></div>
+      <div id="diffSummary" class="summary"></div>
+      <div id="diffDetail"></div>
+    </section>
+
+    <!-- 当前商铺数据（全宽 + 分页） -->
+    <section class="card">
+      <div class="card-head">
+        <h2>当前商铺数据</h2>
+        <span id="shopsCount" class="count-badge">—</span>
+        <span class="spacer"></span>
+        <button class="btn btn-mini" id="btnReloadShops">⟳ 刷新</button>
+      </div>
+      <div id="shopsMeta" class="note"></div>
+      <input id="shopSearch" class="search-full" type="search" placeholder="🔍 搜索名称 / 编号 / 类别 / 电话 / 位置…" />
+      <div id="shopsTable"></div>
+      <div id="shopsPager" class="pager"></div>
+    </section>
+  </main>
+
+  <!-- 页面底部占位：锁定整页高度，避免搜索过滤后滚动跳动 -->
+  <div id="pageSpacer" aria-hidden="true"></div>
+
+  <!-- SMTP 配置弹窗 -->
+  <div id="smtpModal" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="smtpModalTitle">
+      <div class="modal-head">
+        <h3 id="smtpModalTitle">发件服务器 (SMTP)</h3>
+        <button class="modal-close" id="btnCloseSmtp" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="note">发送邮件需要一个发件邮箱账号。常见：QQ 邮箱 <code>smtp.qq.com:465</code>、Gmail <code>smtp.gmail.com:465</code>。密码一般为「授权码」而非登录密码。</p>
+        <div class="grid2">
+          <div class="field"><label class="lbl">SMTP 服务器</label><input id="smtpHost" placeholder="smtp.qq.com" /></div>
+          <div class="field"><label class="lbl">端口</label><input id="smtpPort" type="number" placeholder="465" /></div>
+        </div>
+        <label class="check-row">
+          <input type="checkbox" id="smtpSecure" />
+          <span>使用 SSL <em>（端口 465 勾选；587 不勾选用 STARTTLS）</em></span>
+        </label>
+        <div class="grid2">
+          <div class="field"><label class="lbl">账号</label><input id="smtpUser" placeholder="you@qq.com" /></div>
+          <div class="field"><label class="lbl">密码 / 授权码</label><input id="smtpPass" type="password" placeholder="••••••" /></div>
+        </div>
+        <div class="field"><label class="lbl">发件人显示地址 <em>（可留空，默认用账号）</em></label><input id="smtpFrom" placeholder="you@qq.com" /></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-soft" id="btnTestEmail">✉️ 发送测试邮件</button>
+        <button class="btn btn-primary" id="btnSaveSmtp">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 运行历史弹窗 -->
+  <div id="historyModal" class="modal-overlay" hidden>
+    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
+      <div class="modal-head">
+        <h3 id="historyModalTitle">运行历史</h3>
+        <button class="modal-close" id="btnCloseHistory" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="hist-filters">
+          <input id="histSearch" type="search" placeholder="🔍 关键字（来源 / 错误信息）" />
+          <select id="histReason">
+            <option value="">全部来源</option>
+            <option value="interval">间隔</option>
+            <option value="daily">每天定时</option>
+            <option value="manual-preview">手动预览</option>
+            <option value="manual-send">手动发送</option>
+          </select>
+          <select id="histResult">
+            <option value="">全部结果</option>
+            <option value="changed">有变动</option>
+            <option value="nochange">无变动</option>
+            <option value="emailed">已发邮件</option>
+            <option value="failed">失败</option>
+          </select>
+          <span class="spacer"></span>
+          <span id="histCount" class="count-badge">—</span>
+        </div>
+        <div id="historyList" class="history">加载中…</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "chkc-shopinfo-reminder",
+  "version": "1.0.0",
+  "description": "CHKC mall shop info monitor — fetches shop data, diffs changes, emails reports on a schedule, with a config UI",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.13"
+  }
+}

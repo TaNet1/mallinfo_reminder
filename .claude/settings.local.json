@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /tmp)",
+      "Bash(cp \"/d/Downloads/商场数据开放接口V1.0_20241118 \\(1\\).docx\" doc.docx)",
+      "Bash(unzip -o doc.docx -d doc_extract)",
+      "Bash(node -e ' *)",
+      "Bash(node -e 'const fs=require\\(\"fs\"\\);let s=fs.readFileSync\\(\"tmp_probe.mjs\",\"utf8\"\\);s=s.replace\\(/const clean = t\\\\.replace\\\\\\([\\\\s\\\\S]*?\\\\\\);/,\"const clean = t.replace\\(/[\\\\\\\\u0000-\\\\\\\\u001f]/g, ch => \\\\\"\\\\\\\\\\\\\\\\u\\\\\" + ch.charCodeAt\\(0\\).toString\\(16\\).padStart\\(4, \\\\\"0\\\\\"\\)\\);\"\\);fs.writeFileSync\\(\"tmp_probe.mjs\",s\\);console.log\\(\"patched\"\\);')",
+      "Bash(node tmp_probe.mjs)",
+      "Bash(kill %1)",
+      "Bash(kill bwf3nxv71 *)",
+      "Bash(powershell.exe -NoProfile -Command 'Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }')",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(kill bkj61rdsh *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(kill bb0j59xnz *)",
+      "Bash(kill bn4ie3o04 *)",
+      "Bash(kill bwk7oi7ec *)",
+      "Bash(curl -s http://localhost:3000/api/status)",
+      "Bash(node -e 'let d=\"\";process.stdin.on\\(\"data\",c=>d+=c\\).on\\(\"end\",\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(\"lastVerify:\",JSON.stringify\\(j.status.lastVerify\\)\\);console.log\\(\"enabled:\",j.status.enabled,\"mode:\",j.status.mode\\);}\\)')",
+      "Bash(curl -s http://localhost:3000/api/config)",
+      "Bash(node -e 'let d=\"\";process.stdin.on\\(\"data\",c=>d+=c\\).on\\(\"end\",\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(\"schedule:\",JSON.stringify\\(j.config.schedule\\),\"enabled:\",j.config.enabled\\);}\\)')",
+      "Bash(kill b2m306dzw *)",
+      "Bash(kill bovv956vg *)",
+      "Bash(kill b8778n7kj *)",
+      "Bash(kill bbacfhh0a *)",
+      "Bash(kill ba7unwd99 *)"
+    ]
+  }
+}
