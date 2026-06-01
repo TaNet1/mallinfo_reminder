@@ -7,6 +7,7 @@ import { getConfig, saveConfig, getSnapshot, getHistory } from "./store.js";
 import { verify, fetchShops, BUSINESS_CLASSIFY, FOODS } from "./api.js";
 import { diffShops } from "./diff.js";
 import { sendTestEmail } from "./mailer.js";
+import { sendTestLark } from "./lark.js";
 import { scheduler } from "./scheduler.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,7 @@ function redactConfig(cfg) {
   return {
     ...cfg,
     smtp: { ...cfg.smtp, pass: cfg.smtp.pass ? "********" : "" },
+    lark: { ...cfg.lark, secret: cfg.lark.secret ? "********" : "" },
   };
 }
 
@@ -38,6 +40,9 @@ app.post("/api/config", wrap((req, res) => {
   const incoming = req.body || {};
   if (incoming.smtp && incoming.smtp.pass === "********") {
     delete incoming.smtp.pass; // 不覆盖已有密码
+  }
+  if (incoming.lark && incoming.lark.secret === "********") {
+    delete incoming.lark.secret; // 不覆盖已有 Secret
   }
   if (typeof incoming.recipients === "string") {
     incoming.recipients = incoming.recipients
@@ -83,6 +88,13 @@ app.post("/api/test-email", wrap(async (req, res) => {
     : cfg.recipients;
   const id = await sendTestEmail({ smtp: cfg.smtp, recipients });
   res.json({ ok: true, messageId: id });
+}));
+
+// 发送 Lark 测试消息
+app.post("/api/test-lark", wrap(async (req, res) => {
+  const cfg = getConfig();
+  await sendTestLark({ webhook: cfg.lark.webhook, secret: cfg.lark.secret });
+  res.json({ ok: true });
 }));
 
 // 调度状态 + 运行历史

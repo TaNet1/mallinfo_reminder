@@ -260,9 +260,11 @@ table.shops-full tbody tr:hover { background: #f8faff; }
 .hist-row.changed .hist-icon { color: var(--primary); }
 .hist-row.fail .hist-icon { color: var(--err); }
 .hist-time { color: var(--muted); font-variant-numeric: tabular-nums; }
-.hist-mail { margin-left: auto; font-size: 12px; color: var(--muted); }
+.hist-mail { font-size: 12px; color: var(--muted); }
 .hist-mail.ok { color: var(--ok); }
 .hist-mail.warn { color: var(--warn); }
+.hist-line1 > .hist-mail { margin-left: auto; }
+.hist-mail-wrap { margin-left: auto; display: inline-flex; gap: 8px; }
 .hist-line2 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
 .hist-line2 .chip { font-size: 11px; padding: 2px 9px; }
 .hist-total { font-size: 12px; color: var(--muted); }

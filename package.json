@@ -5,10 +5,13 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "service:install": "node service/install-service.cjs",
+    "service:uninstall": "node service/uninstall-service.cjs"
   },
   "dependencies": {
     "express": "^4.19.2",
+    "node-windows": "^1.0.0-beta.8",
     "nodemailer": "^6.9.13"
   }
 }

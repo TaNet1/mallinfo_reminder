@@ -50,10 +50,14 @@ function applyConfig(cfg) {
   $("smtpUser").value = cfg.smtp.user || "";
   $("smtpPass").value = cfg.smtp.pass || "";
   $("smtpFrom").value = cfg.smtp.from || "";
+  $("larkEnabled").checked = !!cfg.lark?.enabled;
+  $("larkWebhook").value = cfg.lark?.webhook || "";
+  $("larkSecret").value = cfg.lark?.secret || "";
   if (cfg.api?.baseUrl) appBaseUrl = cfg.api.baseUrl;
   updateModeBoxes();
   syncQuickSet();
   updateSmtpStatus();
+  updateLarkStatus();
 }
 
 function updateSmtpStatus() {
@@ -71,6 +75,25 @@ function updateSmtpStatus() {
 
 function openSmtp() { $("smtpModal").hidden = false; }
 function closeSmtp() { $("smtpModal").hidden = true; }
+
+function updateLarkStatus() {
+  const on = $("larkEnabled").checked;
+  const hasHook = !!$("larkWebhook").value.trim();
+  const el = $("larkStatus");
+  if (on && hasHook) {
+    el.textContent = "已启用";
+    el.className = "smtp-state set";
+  } else if (hasHook) {
+    el.textContent = "已配置（未启用）";
+    el.className = "smtp-state";
+  } else {
+    el.textContent = "未启用";
+    el.className = "smtp-state";
+  }
+}
+
+function openLark() { $("larkModal").hidden = false; }
+function closeLark() { $("larkModal").hidden = true; }
 
 function updateModeBoxes() {
   const mode = document.querySelector("input[name=mode]:checked")?.value;
@@ -106,9 +129,20 @@ function collectSmtp() {
   };
 }
 
-// 通信配置（收件邮箱 + 发件服务器）
+// Lark 相关
+function collectLark() {
+  return {
+    lark: {
+      enabled: $("larkEnabled").checked,
+      webhook: $("larkWebhook").value.trim(),
+      secret: $("larkSecret").value,
+    },
+  };
+}
+
+// 通信配置（收件邮箱 + 发件服务器 + Lark）
 function collectComms() {
-  return { recipients: $("recipients").value, ...collectSmtp() };
+  return { recipients: $("recipients").value, ...collectSmtp(), ...collectLark() };
 }
 
 // ---------- 各操作 ----------
@@ -182,9 +216,12 @@ function buildHistRow(h) {
         c.removed ? `<span class="chip chip-del">−${c.removed}</span>` : "",
       ].join("")
     : `<span class="hist-nochange">无变动</span>`;
-  const mail = h.emailed
-    ? `<span class="hist-mail ok">✉️ 已发送</span>`
-    : (h.emailError ? `<span class="hist-mail warn">⚠ 未发送</span>` : `<span class="hist-mail">— 未发送</span>`);
+  const chans = [];
+  if (h.emailed) chans.push(`<span class="hist-mail ok">✉️ 邮件</span>`);
+  else if (h.emailError) chans.push(`<span class="hist-mail warn" title="${esc(h.emailError)}">✉️ 邮件失败</span>`);
+  if (h.larked) chans.push(`<span class="hist-mail ok">💬 Lark</span>`);
+  else if (h.larkError) chans.push(`<span class="hist-mail warn" title="${esc(h.larkError)}">💬 Lark失败</span>`);
+  const mail = chans.length ? `<span class="hist-mail-wrap">${chans.join(" ")}</span>` : `<span class="hist-mail">— 未推送</span>`;
   const icon = changed ? "●" : "○";
 
   return `<div class="hist-row ${changed ? "changed" : ""}">
@@ -456,6 +493,13 @@ $("btnOpenSmtp").addEventListener("click", openSmtp);
 $("btnCloseSmtp").addEventListener("click", closeSmtp);
 $("smtpModal").addEventListener("click", (e) => { if (e.target.id === "smtpModal") closeSmtp(); });
 
+// Lark 弹窗
+$("btnOpenLark").addEventListener("click", openLark);
+$("btnCloseLark").addEventListener("click", closeLark);
+$("larkModal").addEventListener("click", (e) => { if (e.target.id === "larkModal") closeLark(); });
+$("larkEnabled").addEventListener("change", updateLarkStatus);
+$("larkWebhook").addEventListener("input", updateLarkStatus);
+
 // 运行历史弹窗
 $("btnHistory").addEventListener("click", openHistory);
 $("btnCloseHistory").addEventListener("click", closeHistory);
@@ -466,7 +510,30 @@ $("historyModal").addEventListener("click", (e) => { if (e.target.id === "histor
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   if (!$("smtpModal").hidden) closeSmtp();
+  if (!$("larkModal").hidden) closeLark();
   if (!$("historyModal").hidden) closeHistory();
+});
+
+$("btnSaveLark").addEventListener("click", async (ev) => {
+  ev.target.disabled = true;
+  try {
+    await api("/api/config", { method: "POST", body: collectLark() });
+    updateLarkStatus();
+    toast("Lark 配置已保存", "ok");
+    closeLark();
+  } catch (e) { toast(e.message, "err"); }
+  finally { ev.target.disabled = false; }
+});
+
+$("btnTestLark").addEventListener("click", async (ev) => {
+  ev.target.disabled = true;
+  toast("正在发送 Lark 测试消息…");
+  try {
+    await api("/api/config", { method: "POST", body: collectLark() });
+    await api("/api/test-lark", { method: "POST", body: {} });
+    toast("Lark 测试消息已发送，请查看群消息", "ok");
+  } catch (e) { toast("发送失败：" + e.message, "err"); }
+  finally { ev.target.disabled = false; }
 });
 
 $("btnSaveSmtp").addEventListener("click", async (ev) => {
@@ -495,6 +562,7 @@ $("btnSaveComms").addEventListener("click", async (ev) => {
   try {
     await api("/api/config", { method: "POST", body: collectComms() });
     updateSmtpStatus();
+    updateLarkStatus();
     toast("通信配置已保存", "ok");
   } catch (e) { toast(e.message, "err"); }
   finally { ev.target.disabled = false; }

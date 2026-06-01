@@ -2,6 +2,7 @@
 import { fetchShops, verify } from "./api.js";
 import { diffShops } from "./diff.js";
 import { sendChangeReport } from "./mailer.js";
+import { sendChangeCard } from "./lark.js";
 import { getConfig, getSnapshot, saveSnapshot, addHistory } from "./store.js";
 
 const VERIFY_INTERVAL_MS = 12 * 60 * 60 * 1000; // 每 12 小时自动检测一次接口连通
@@ -48,27 +49,36 @@ export class Scheduler {
       let emailed = false;
       let emailError = null;
       let messageId = null;
+      let larked = false;
+      let larkError = null;
 
-      // 首次运行：仅建立基准快照，不把现有全部商铺当作「新增」发邮件
-      if (sendEmail && !firstRun && (diff.hasChanges || cfg.notifyWhenNoChange)) {
+      // 首次运行：仅建立基准快照，不把现有全部商铺当作「新增」推送
+      const shouldNotify = sendEmail && !firstRun && (diff.hasChanges || cfg.notifyWhenNoChange);
+      if (shouldNotify) {
+        const meta = { baseUrl: cfg.api.baseUrl };
+
+        // 通道一：邮件（仅在配置了收件人时尝试）
         if (cfg.recipients?.length) {
           try {
-            messageId = await sendChangeReport({
-              smtp: cfg.smtp,
-              recipients: cfg.recipients,
-              diff,
-              meta: { baseUrl: cfg.api.baseUrl },
-            });
+            messageId = await sendChangeReport({ smtp: cfg.smtp, recipients: cfg.recipients, diff, meta });
             emailed = true;
           } catch (e) {
             emailError = e.message;
           }
-        } else {
-          emailError = "未配置收件邮箱";
+        }
+
+        // 通道二：Lark（仅在启用且有 webhook 时尝试）
+        if (cfg.lark?.enabled && cfg.lark.webhook) {
+          try {
+            await sendChangeCard({ webhook: cfg.lark.webhook, secret: cfg.lark.secret, diff, meta });
+            larked = true;
+          } catch (e) {
+            larkError = e.message;
+          }
         }
       }
 
-      // 比对完成后更新快照（即便邮件失败也更新，避免重复告警；如需重试可改为失败不更新）
+      // 比对完成后更新快照（即便推送失败也更新，避免重复告警；如需重试可改为失败不更新）
       saveSnapshot(shops);
 
       const result = {
@@ -81,6 +91,8 @@ export class Scheduler {
         emailed,
         emailError,
         messageId,
+        larked,
+        larkError,
         firstRun: !prev,
       };
       this.lastResult = { ...result, at: new Date().toISOString() };
