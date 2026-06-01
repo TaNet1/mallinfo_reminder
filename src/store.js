@@ -33,6 +33,11 @@ export const DEFAULT_CONFIG = {
     pass: "",
     from: "",                // 发件人显示地址，留空则用 user
   },
+  lark: {
+    enabled: false,          // 是否启用 Lark 通知
+    webhook: "",             // Lark 群自定义机器人 Webhook 地址
+    secret: "",              // 可选：签名校验 Secret
+  },
   notifyWhenNoChange: false,  // 无变动时是否也发邮件
   enabled: false,             // 定时任务总开关
 };

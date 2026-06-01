@@ -96,10 +96,18 @@
 
         <div class="smtp-bar">
           <div class="smtp-status">
-            <span class="lbl" style="margin:0">发件服务器</span>
+            <span class="lbl" style="margin:0">邮件 (SMTP)</span>
             <span id="smtpStatus" class="smtp-state">未配置</span>
           </div>
           <button class="btn btn-soft" id="btnOpenSmtp">⚙️ 配置发件服务器</button>
+        </div>
+
+        <div class="smtp-bar">
+          <div class="smtp-status">
+            <span class="lbl" style="margin:0">Lark 通知</span>
+            <span id="larkStatus" class="smtp-state">未启用</span>
+          </div>
+          <button class="btn btn-soft" id="btnOpenLark">💬 配置 Lark 机器人</button>
         </div>
 
         <div class="card-foot">
@@ -159,6 +167,29 @@
       <div class="modal-foot">
         <button class="btn btn-soft" id="btnTestEmail">✉️ 发送测试邮件</button>
         <button class="btn btn-primary" id="btnSaveSmtp">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lark 配置弹窗 -->
+  <div id="larkModal" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="larkModalTitle">
+      <div class="modal-head">
+        <h3 id="larkModalTitle">Lark 机器人通知</h3>
+        <button class="modal-close" id="btnCloseLark" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="note">在 Lark 群里添加「自定义机器人 (Custom Bot)」即可获得 Webhook 地址。变动报告会以交互卡片形式推送到该群。若机器人开启了「签名校验」，请一并填入 Secret。</p>
+        <label class="check-row">
+          <input type="checkbox" id="larkEnabled" />
+          <span>启用 Lark 通知</span>
+        </label>
+        <div class="field"><label class="lbl">Webhook 地址</label><input id="larkWebhook" placeholder="https://open.larksuite.com/open-apis/bot/v2/hook/xxxx" /></div>
+        <div class="field"><label class="lbl">签名 Secret <em>（可选，机器人开启「签名校验」时填）</em></label><input id="larkSecret" type="password" placeholder="留空表示不使用签名" /></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-soft" id="btnTestLark">💬 发送测试消息</button>
+        <button class="btn btn-primary" id="btnSaveLark">保存</button>
       </div>
     </div>
   </div>
