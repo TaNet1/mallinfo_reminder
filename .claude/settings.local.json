@@ -25,7 +25,18 @@
       "Bash(kill bovv956vg *)",
       "Bash(kill b8778n7kj *)",
       "Bash(kill bbacfhh0a *)",
-      "Bash(kill ba7unwd99 *)"
+      "Bash(kill ba7unwd99 *)",
+      "Bash(kill bk6p92r19 *)",
+      "Bash(node -e 'let d=\"\";process.stdin.on\\(\"data\",c=>d+=c\\).on\\(\"end\",\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(JSON.stringify\\(j.config.lark\\)\\);}\\)')",
+      "Bash(curl -s -X POST http://localhost:3000/api/check-now -H \"Content-Type: application/json\" -d '{\"sendEmail\":true}')",
+      "Bash(node -e 'let d=\"\";process.stdin.on\\(\"data\",c=>d+=c\\).on\\(\"end\",\\(\\)=>{const j=JSON.parse\\(d\\);const r=j.result;console.log\\(\"ok:\",j.ok,\"counts:\",JSON.stringify\\(r.counts\\),\"larked:\",r.larked,\"larkError:\",r.larkError,\"emailed:\",r.emailed,\"emailError:\",r.emailError\\);}\\)')",
+      "PowerShell($admin = \\([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent\\(\\)\\).IsInRole\\([Security.Principal.WindowsBuiltinRole]::Administrator\\); \"IsAdmin: $admin\"; \"Node: $\\(\\(Get-Command node\\).Source\\)\")",
+      "Bash(npm install *)",
+      "Bash(node --check service/install-service.cjs)",
+      "Bash(node --check service/uninstall-service.cjs)",
+      "Bash(kill bp49t23i1 *)",
+      "Bash(git commit *)",
+      "Bash(echo \"=== exit $? ===\")"
     ]
   }
 }
