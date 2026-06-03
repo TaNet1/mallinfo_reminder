@@ -15,6 +15,7 @@ export class Scheduler {
     this.lastResult = null;     // 最近一次检查结果摘要
     this.verifyTimer = null;
     this.lastVerify = null;     // 最近一次接口连通检测结果 { ok, at }
+    this.larkSkipDate = null;   // 若某天 Lark 连续失败，记录该日期，当天不再尝试
   }
 
   // 检测接口连通性并记录结果
@@ -51,6 +52,8 @@ export class Scheduler {
       let messageId = null;
       let larked = false;
       let larkError = null;
+      let larkAttempts = null;
+      let larkSkipped = false;
 
       // 首次运行：仅建立基准快照，不把现有全部商铺当作「新增」推送
       const shouldNotify = sendEmail && !firstRun && (diff.hasChanges || cfg.notifyWhenNoChange);
@@ -68,12 +71,23 @@ export class Scheduler {
         }
 
         // 通道二：Lark（仅在启用且有 webhook 时尝试）
+        // 失败自动重试最多 5 次；若连续 5 次都失败，标记当天不再尝试。
         if (cfg.lark?.enabled && cfg.lark.webhook) {
-          try {
-            await sendChangeCard({ webhook: cfg.lark.webhook, secret: cfg.lark.secret, diff, meta });
-            larked = true;
-          } catch (e) {
-            larkError = e.message;
+          const today = new Date().toISOString().slice(0, 10);
+          if (this.larkSkipDate === today) {
+            larkSkipped = true;
+            larkError = `当天已连续失败，已暂停推送（${today}），明日恢复`;
+          } else {
+            try {
+              const r = await sendChangeCard({ webhook: cfg.lark.webhook, secret: cfg.lark.secret, diff, meta, maxAttempts: 5 });
+              larked = true;
+              larkAttempts = r.attempts;
+              this.larkSkipDate = null; // 成功则清除暂停标记
+            } catch (e) {
+              larkError = e.message;
+              larkAttempts = e.attempts || 5;
+              this.larkSkipDate = today; // 连续 5 次失败：当天不再尝试
+            }
           }
         }
       }
@@ -93,6 +107,8 @@ export class Scheduler {
         messageId,
         larked,
         larkError,
+        larkAttempts,
+        larkSkipped,
         firstRun: !prev,
       };
       this.lastResult = { ...result, at: new Date().toISOString() };

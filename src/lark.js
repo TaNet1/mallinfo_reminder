@@ -118,8 +118,33 @@ export function buildChangeCard(diff, meta = {}) {
   };
 }
 
-export async function sendChangeCard({ webhook, secret, diff, meta }) {
-  return postWebhook(webhook, buildChangeCard(diff, meta), secret);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// 带重试的发送：失败自动重试，最多 maxAttempts 次（含首次），
+// 重试间隔逐次拉长（2s→4s→8s→16s，封顶 20s），以应对临时限流。
+// 全部失败则抛错，错误对象带 .attempts。
+async function postWithRetry(webhook, payload, secret, { maxAttempts = 5, onRetry } = {}) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await postWebhook(webhook, payload, secret);
+      return { attempts: attempt };
+    } catch (e) {
+      lastErr = e;
+      if (attempt < maxAttempts) {
+        const wait = Math.min(2000 * 2 ** (attempt - 1), 20000);
+        if (onRetry) onRetry(attempt, e, wait);
+        await sleep(wait);
+      }
+    }
+  }
+  const err = new Error(`连续 ${maxAttempts} 次发送失败：${lastErr?.message || "未知错误"}`);
+  err.attempts = maxAttempts;
+  throw err;
+}
+
+export async function sendChangeCard({ webhook, secret, diff, meta, maxAttempts = 5, onRetry }) {
+  return postWithRetry(webhook, buildChangeCard(diff, meta), secret, { maxAttempts, onRetry });
 }
 
 export async function sendTestLark({ webhook, secret }) {

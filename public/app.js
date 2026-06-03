@@ -219,8 +219,13 @@ function buildHistRow(h) {
   const chans = [];
   if (h.emailed) chans.push(`<span class="hist-mail ok">✉️ 邮件</span>`);
   else if (h.emailError) chans.push(`<span class="hist-mail warn" title="${esc(h.emailError)}">✉️ 邮件失败</span>`);
-  if (h.larked) chans.push(`<span class="hist-mail ok">💬 Lark</span>`);
-  else if (h.larkError) chans.push(`<span class="hist-mail warn" title="${esc(h.larkError)}">💬 Lark失败</span>`);
+  if (h.larked) {
+    const retried = h.larkAttempts > 1 ? ` (重试${h.larkAttempts}次)` : "";
+    chans.push(`<span class="hist-mail ok" title="${h.larkAttempts > 1 ? "重试 " + h.larkAttempts + " 次后成功" : "推送成功"}">💬 Lark${retried}</span>`);
+  } else if (h.larkError) {
+    const label = h.larkSkipped ? "Lark已暂停" : "Lark失败";
+    chans.push(`<span class="hist-mail warn" title="${esc(h.larkError)}">💬 ${label}</span>`);
+  }
   const mail = chans.length ? `<span class="hist-mail-wrap">${chans.join(" ")}</span>` : `<span class="hist-mail">— 未推送</span>`;
   const icon = changed ? "●" : "○";
 
